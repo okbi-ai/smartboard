@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>دورة التنويم المغناطيسي الاحترافية — جلسات</title>
+<style>
+  :root{
+    --bg:#f6f8fb; --card:#fff; --accent:#0b63c6; --accent-dark:#084b8f; --muted:#666;
+  }
+  body{margin:0;font-family:Arial, Tahoma, sans-serif;background:var(--bg);color:#111;direction:rtl}
+  header{background:linear-gradient(90deg,var(--accent),var(--accent-dark));color:#fff;padding:18px;text-align:center;font-size:20px;font-weight:700}
+  .wrap{max-width:1000px;margin:18px auto;padding:12px}
+  .layout{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}
+  .left{width:320px}
+  .right{flex:1;min-width:320px}
+  .card{background:var(--card);border-radius:10px;padding:12px;box-shadow:0 6px 18px rgba(10,10,10,0.06);margin-bottom:14px}
+  .session-item{display:flex;gap:8px;align-items:center;padding:10px;border-radius:8px;border:1px solid #f0f0f0;margin-bottom:8px;cursor:pointer}
+  .session-item.active{background:linear-gradient(90deg,#eef6ff,#fff);border-color:#d6eaff}
+  .session-title{font-weight:700}
+  .small{font-size:13px;color:var(--muted)}
+  button{background:var(--accent);color:#fff;border:none;padding:8px 12px;border-radius:8px;cursor:pointer}
+  button.secondary{background:#eee;color:#111}
+  .controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px}
+  input[type="text"]{padding:8px;border-radius:6px;border:1px solid #ddd;width:60%}
+  .audio-controls{display:flex;gap:8px;align-items:center;margin-top:10px}
+  progress{width:220px;height:12px}
+  footer{text-align:center;color:var(--muted);margin-top:14px;font-size:13px}
+  @media(max-width:860px){.layout{flex-direction:column}.left{width:100%}}
+</style>
+</head>
+<body>
+<header>🌀 دورة التنويم المغناطيسي الاحترافية — مشغل الجلسات</header>
+
+<div class="wrap">
+  <div class="layout">
+    <div class="left card">
+      <div style="font-size:16px;font-weight:700;margin-bottom:8px">قائمة الجلسات</div>
+      <div id="list"></div>
+      <div class="small" style="margin-top:8px">اضغط على أي جلسة لعرضها على اليمين. يمكنك رفع ملف mp3 محلي أو لصق رابط خارجي ثم حفظه.</div>
+    </div>
+
+    <div class="right card" id="playerCard">
+      <div id="sessionHeader"><div style="font-size:18px;font-weight:700">اختر جلسة لتبدأ</div></div>
+
+      <div id="sessionBody" style="display:none;margin-top:8px">
+        <div id="desc" class="small"></div>
+
+        <div class="audio-controls">
+          <button id="playBtn">تشغيل</button>
+          <button id="stopBtn" class="secondary">إيقاف</button>
+          <progress id="prog" value="0" max="100"></progress>
+          <div id="time" class="small">00:00 / 00:00</div>
+        </div>
+
+        <div style="margin-top:10px" class="controls">
+          <label class="filebtn secondary" for="fileInput">رفع ملف (MP3)</label>
+          <input id="fileInput" type="file" accept="audio/*" style="display:none">
+          <input id="urlInput" type="text" placeholder="ضع رابط mp3 خارجي هنا">
+          <button id="saveUrlBtn" class="secondary">حفظ الرابط</button>
+          <button id="downloadBtn" class="secondary">تحميل الملف</button>
+        </div>
+
+        <div style="margin-top:10px" class="controls">
+          <label class="small">موسيقى خلفية:</label>
+          <label class="filebtn secondary" for="bgFile">رفع موسيقى</label>
+          <input id="bgFile" type="file" accept="audio/*" style="display:none">
+          <button id="toggleBg" class="secondary">تشغيل/إيقاف الموسيقى</button>
+        </div>
+
+        <div style="margin-top:12px" class="small">التقدم سيتم حفظه تلقائيًا في المتصفح. يمكنك فتح الموقع لاحقًا لاستكمال الجلسة.</div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<footer>حقوقك محفوظة — دورة التنويم المغناطيسي الاحترافية (نسختك الشخصية)</footer>
+
+<script>
+/* ======= بيانات الجلسات النصية والوصف - يمكنك تعديل النص هنا ====== */
+const SESSIONS = [
+  { id:'s1', title:'الاسترخاء العميق وتصفية الذهن', desc: 'تمارين تنفس وإرخاء العضلات لتهيئة العقل.', defaultUrl: '' },
+  { id:'s2', title:'تنشيط الوعي الداخلي', desc: 'تمارين لرفع درجة الوعي والتركيز بدون توتر.', defaultUrl: '' },
+  { id:'s3', title:'استرجاع الذكريات المنسية', desc: 'جلسة آمنة لاسترجاع الذكريات بلطف.', defaultUrl: '' },
+  { id:'s4', title:'تعزيز الثقة بالنفس', desc: 'إيحاءات لتقوية الصورة الذاتية والاعتماد على النفس.', defaultUrl: '' },
+  { id:'s5', title:'برمجة السلوك الإيجابي', desc: 'جلسة برمجة عادات يومية جديدة وإيجابية.', defaultUrl: '' },
+  { id:'s6', title:'التحرر من الخوف والقلق', desc: 'طرق لإطلاق الطاقة السلبية والطمأنينة.', defaultUrl: '' },
+  { id:'s7', title:'التنويم الذاتي الذكي', desc: 'جلسة متقدمة للتمكن من التنويم الذاتي السريع.', defaultUrl: '' }
+];
+
+const listEl = document.getElementById('list');
+const sessionHeader = document.getElementById('sessionHeader');
+const sessionBody = document.getElementById('sessionBody');
+const descEl = document.getElementById('desc');
+const playBtn = document.getElementById('playBtn');
+const stopBtn = document.getElementById('stopBtn');
+const prog = document.getElementById('prog');
+const timeEl = document.getElementById('time');
+const fileInput = document.getElementById('fileInput');
+const urlInput = document.getElementById('urlInput');
+const saveUrlBtn = document.getElementById('saveUrlBtn');
+const downloadBtn = document.getElementById('downloadBtn');
+const bgFile = document.getElementById('bgFile');
+const toggleBg = document.getElementById('toggleBg');
+
+let current = null;
+let audio = new Audio();
+audio.preload = 'metadata';
+let bgAudio = new Audio();
+bgAudio.loop = true;
+let bgPlaying = false;
+
+/* === بناء قائمة الجلسات === */
+SESSIONS.forEach(s=>{
+  const row = document.createElement('div');
+  row.className='session-item';
+  row.id = 'row_'+s.id;
+  row.innerHTML = `<div style="flex:1"><div class="session-title">${s.title}</div><div class="small">${s.desc}</div></div><div class="small">▶</div>`;
+  row.onclick = ()=> selectSession(s.id);
+  listEl.appendChild(row);
+});
+
+/* === اختيار جلسة === */
+function selectSession(id){
+  current = SESSIONS.find(x=>x.id===id);
+  document.querySelectorAll('.session-item').forEach(el=>el.classList.remove('active'));
+  document.getElementById('row_'+id).classList.add('active');
+  sessionHeader.innerHTML = `<div style="font-size:18px;font-weight:700">${current.title}</div><div class="small">${current.desc}</div>`;
+  sessionBody.style.display='block';
+  // load stored url if any
+  const saved = localStorage.getItem('audioUrl_'+current.id) || current.defaultUrl || '';
+  audio.src = saved || '';
+  urlInput.value = localStorage.getItem('audioUrlExternal_'+current.id) || '';
+  updateTime();
+}
+
+/* === تشغيل/ايقاف والتحكم === */
+playBtn.onclick = ()=>{
+  if(!audio.src){ alert('لم يتم اختيار ملف للجلسة. ارفع ملف MP3 أو ضع رابط خارجي ثم احفظ.'); return; }
+  if(audio.paused) audio.play(); else audio.pause();
+};
+stopBtn.onclick = ()=>{ audio.pause(); audio.currentTime = 0; };
+
+audio.addEventListener('play', ()=> playBtn.textContent='إيقاف');
+audio.addEventListener('pause', ()=> playBtn.textContent='تشغيل');
+audio.addEventListener('timeupdate', ()=>{
+  if(audio.duration) prog.value = (audio.currentTime/audio.duration)*100;
+  updateTime();
+  // save progress every 5 seconds
+  if(current) localStorage.setItem('progress_'+current.id, Math.floor(audio.currentTime));
+});
+audio.addEventListener('ended', ()=> { playBtn.textContent='تشغيل'; prog.value=0; localStorage.removeItem('progress_'+current.id); });
+
+function updateTime(){
+  const cur = formatTime(audio.currentTime || 0);
+  const tot = formatTime(audio.duration || 0);
+  timeEl.textContent = `${cur} / ${tot}`;
+}
+function formatTime(sec){ if(!sec || isNaN(sec)) return '00:00'; const m = Math.floor(sec/60); const s = Math.floor(sec%60); return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}` }
+
+/* === رفع ملف محلي للجلسة === */
+fileInput.onchange = (e)=>{
+  if(!current) { alert('اختر جلسة أولاً'); return; }
+  const f = e.target.files[0]; if(!f) return;
+  const url = URL.createObjectURL(f);
+  audio.src = url;
+  localStorage.setItem('audioName_'+current.id, f.name);
+  // store that local file chosen for session in this window
+  localStorage.setItem('audioUrl_'+current.id, url);
+  alert('تم تحميل الملف محليًا وستعمل هذه الجلسة في متصفحك الحالي. لحفظ دائم استخدم رفع الملف إلى استضافة ثم ضع الرابط.');
+};
+
+/* === حفظ رابط خارجي كمصدر دائم === */
+saveUrlBtn.onclick = ()=>{
+  if(!current) { alert('اختر جلسة أولاً'); return; }
+  const v = urlInput.value.trim();
+  if(!v){ alert('ضع رابط MP3 صالح ثم اضغط حفظ'); return; }
+  audio.src = v;
+  localStorage.setItem('audioUrlExternal_'+current.id, v);
+  localStorage.setItem('audioUrl_'+current.id, v);
+  alert('تم حفظ الرابط كمصدر للجلسة في هذا المتصفح.');
+};
+
+/* === زر تحميل (يحمل المصدر الحالي إن وُجد) === */
+downloadBtn.onclick = ()=>{
+  if(!audio.src){ alert('لا يوجد ملف لتحميل'); return; }
+  const a = document.createElement('a'); a.href = audio.src;
+  const name = localStorage.getItem('audioName_'+current.id) || (current.id+'.mp3');
+  a.download = name; a.click();
+};
+
+/* === موسيقى خلفية رفع/تشغيل === */
+bgFile.onchange = (e)=>{
+  const f = e.target.files[0]; if(!f) return;
+  const url = URL.createObjectURL(f);
+  bgAudio.src = url;
+  localStorage.setItem('bgName', f.name);
+  alert('تم تحميل موسيقى الخلفية محلياً. اضغط تشغيل/إيقاف لتشغيلها.');
+};
+toggleBg.onclick = ()=>{
+  if(!bgAudio.src){ alert('لم تُحمّل موسيقى خلفية. استخدم زر رفع موسيقى.'); return; }
+  if(bgPlaying){ bgAudio.pause(); bgPlaying=false; toggleBg.textContent='تشغيل/إيقاف الموسيقى'; }
+  else { bgAudio.play(); bgPlaying=true; toggleBg.textContent='إيقاف الموسيقى'; }
+};
+
+/* === استعادة التقدم عند التحميل === */
+window.addEventListener('load', ()=>{
+  // restore last session
+  const lastId = localStorage.getItem('lastSessionId');
+  if(lastId) selectSession(lastId);
+  // for each session restore progress if any
+  SESSIONS.forEach(s=>{
+    const progSec = parseInt(localStorage.getItem('progress_'+s.id)||0);
+    const url = localStorage.getItem('audioUrl_'+s.id) || s.defaultUrl || '';
+    // if url exists, prefill in element when selected
+  });
+});
+
+/* === تذكّر الجلسة الحالية عند اختيارها === */
+function rememberSession(){
+  if(current) localStorage.setItem('lastSessionId', current.id);
+}
+// call rememberSession when selecting
+const origSelect = selectSession;
+selectSession = function(id){ origSelect(id); rememberSession(); };
+
+/* === حفظ الروابط النهائية لوضعها في الكود (اختياري) === */
+/* مثال: يمكنك تعديل SESSIONS[i].defaultUrl = 'https://.../s1.mp3' مباشرة في الكود لعرض افتراضي دائم. */
+
+/* === ملاحظة فنية ===
+   - بسبب قيود المتصفحات لا يمكن تخزين ملفات Blob طويلة في localStorage بشكل دائم.
+   - الحل العملي: ارفع ملفات mp3 إلى استضافة/Dropbox/Google Drive (بروابط مباشرة) ثم ضع الرابط في مربع الرابط واضغط حفظ.
+*/
+
+</script>
+</body>
+</html>
